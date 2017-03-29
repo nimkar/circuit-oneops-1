@@ -32,7 +32,7 @@ resource 'user-app',
          :attributes => {
              'username' => 'app',
              'description' => 'App-User',
-             'home_directory' => '/app/',
+             'home_directory' => '/home/app',
              'system_account' => true,
              'sudoer' => true
          }
@@ -407,7 +407,7 @@ resource 'master-user-app',
          :attributes => {
              'username' => 'app',
              'description' => 'App-User',
-             'home_directory' => '/app/',
+             'home_directory' => '/home/app',
              'system_account' => true,
              'sudoer' => true
          }
@@ -588,7 +588,7 @@ end
 end
 
 # managed_via
-['master-os','master-user-app','master-elasticsearch','master-java'].each do |from|
+['master-os','master-user-app','master-volume', 'master-elasticsearch','master-java'].each do |from|
   relation "#{from}::managed_via::master-compute",
            :except => ['_default'],
            :relation_name => 'ManagedVia',

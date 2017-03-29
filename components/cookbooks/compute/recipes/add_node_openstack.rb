@@ -125,7 +125,7 @@ ruby_block 'set flavor/image/availability_zone' do
     elsif ["BUILD","ERROR"].include?(server.state)
       msg = "vm #{server.id} is stuck in #{server.state} state"
       if defined?(server.fault)
-        msg = "vm state: #{server.state} " + "fault message: " + server.fault["message"] + " fault code: " + server.fault["code"].to_s if !server.fault.nil? && !fault.empty?
+        msg = "vm state: #{server.state} " + "fault message: " + server.fault["message"] + " fault code: " + server.fault["code"].to_s if !server.fault.nil? && !server.fault.empty?
       end
       exit_with_error "#{msg}"
     else
@@ -159,8 +159,9 @@ ruby_block 'setup security groups' do
              msg=""
              case e.response[:body]
              when /\"code\": \d{3}+/
-              msg = JSON.parse(e.response[:body])['badRequest']['message']
-              exit_with_error "#{msg}"
+              error_key=JSON.parse(e.response[:body]).keys[0]
+              msg = JSON.parse(e.response[:body])[error_key]['message']
+              exit_with_error "#{error_key} .. #{msg}"
              else
               msg = JSON.parse(e.response[:body])
               exit_with_error "#{msg}"
@@ -429,6 +430,16 @@ ruby_block 'set node network params' do
         end
       end
     end
+    private_ipv6 = ''
+    server.addresses.each_value do |addr_list|
+      addr_list.each do |addr|
+        puts "addr: #{addr.inspect}"
+        if addr["OS-EXT-IPS:type"] == "fixed" && addr["version"] == 6
+          private_ipv6 = addr["addr"]
+          Chef::Log.info("private ipv6 address:#{private_ipv6}")
+        end
+      end
+    end
 
     puts "***RESULT:public_ip="+public_ip
     dns_record = public_ip
@@ -439,6 +450,7 @@ ruby_block 'set node network params' do
     # lets set private_ip to this addr too for other cookbooks which use private_ip
     puts "***RESULT:private_ip="+private_ip
     puts "***RESULT:host_id=#{server.host_id}"
+    puts "***RESULT:private_ipv6="+private_ipv6
 
     if node.ip_attribute == "private_ip"
       node.set[:ip] = private_ip
@@ -478,6 +490,13 @@ ruby_block 'catch errors/faults' do
     end
   end
 end
+
+#give windows some time to initialize - 4 min
+ruby_block 'wait for windows initialization' do
+  block do
+      sleep 60
+  end
+end if node[:ostype] =~ /windows/
 
 include_recipe "compute::ssh_port_wait"
 

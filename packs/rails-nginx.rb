@@ -4,7 +4,6 @@ name "rails-nginx"
 description "Rails with Nginx"
 type "Platform"
 category "Web Application"
-ignore true
 
 environment "single", {}
 environment "redundant", {}
@@ -13,7 +12,7 @@ environment "redundant", {}
 resource "ruby",
   :cookbook => "oneops.1.ruby",
   :design => true,
-  :requires => { "constraint" => "1..1" },
+  :requires => { "constraint" => "1..1", "services" => "*mirror" },
   :attributes => {
     "version"       => "1.8.7",
     "gems"          => '{"bundler":""}'
@@ -22,7 +21,7 @@ resource "ruby",
 resource "railsapp",
   :cookbook => "oneops.1.build",
   :design => true,
-  :requires => { "constraint" => "0..*" },
+  :requires => { "constraint" => "0..*", "services" => "*mirror" },
   :attributes => {
     "install_dir"   => '/usr/local/railsapp',
     "repository"    => "",
